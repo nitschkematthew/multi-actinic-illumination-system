@@ -27,7 +27,7 @@ setwd("Spectra_moveAv/")
 LED <- getspec(where = getwd(), ext = "txt", lim = c(400, 700), decimal = ".", subdir = FALSE, subdir.names = FALSE, fast = TRUE)
 ```
 
-### First step is to perform an initial exploration of the dataset to check for successful import and general differences in peak shapes and intensity
+### Perform an initial exploration of the dataset to check for successful import and general differences in peak shapes and intensity
 
 ```{r}
 explorespec(LED, ylab = "Intensity (counts)")
