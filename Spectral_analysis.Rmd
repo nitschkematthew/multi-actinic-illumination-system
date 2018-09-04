@@ -1,0 +1,123 @@
+---
+title: An LED-based multi-actinic illumination system for the high throughput study
+  of photosynthetic light responses
+author: "JSerodio, WSchmidt, JFrommlet, GChrista, MNitschke"
+date: "04 April 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## This is a make-file for the analysis of spectral data using the R package Pavo "http://rafaelmaia.net/pavo/". 
+## Below are scripts for the exploration and description of LED spectral quality (peak shape, intensity).
+
+## First step is to load the required packages, set working directory, and import in the spectra
+
+We use the 'getspec' function to find all the text files (in this instance, one text file for each spectrum) in the working directory and combine them into a pavo object "LED". We limit the import range to the visible spectrum, 400 to 700 nm.
+
+```{r}
+library(pavo)
+library(ggplot2)
+
+setwd("Spectra_moveAv/")
+
+LED <- getspec(where = getwd(), ext = "txt", lim = c(400, 700), decimal = ".", subdir = FALSE, subdir.names = FALSE, fast = TRUE)
+
+```
+
+## First step is to perform an initial exploration of the dataset to check for successful import and general differences in peak shapes and intensity
+
+```{r}
+explorespec(LED, ylab = "Intensity (counts)")
+```
+
+## Characterising the raw red, green, and blue spectra peak shape
+
+We use the automated peak-detection of the pavo function 'peakshape' to characterise peak wavelength in nm (H1) and the full-width at half maximum in nm (FWHM). Assigning plot = TRUE will render one plot for each spectra. A data frame with the parameters of each spectrum is also produced
+
+```{r}
+peakshape(LED, select = c("b","g","r"), plot = TRUE)
+
+```
+
+## Characterising peak shapes of raw spectra with all four (RGBW) LEDs powered at once
+
+As above, we use peak-detection of the function 'peakshape' to characterise the peak wavelength in nm (H1) and the full-width at half maximum in nm (FWHM). As there are multiple peaks in this spetrum, we must delimit the region of interest, otherwise the function will incorrectly analyse the peak with the highest intensity.
+
+```{r}
+peakshape(LED, lim = c(400, 500), select = c("rgbw"), plot = TRUE)
+peakshape(LED, lim = c(495, 560), select = c("rgbw"), plot = TRUE)
+peakshape(LED, lim = c(600, 700), select = c("rgbw"), plot = TRUE)
+```
+
+## Normalising all five spectra using the function 'procspec' to min and max intensities, assign to the object "LEDnorm" and plot for the manuscript using different colours for each LED.
+
+```{r}
+LEDnorm <- procspec(LED, opt = c("min", "max"))
+plot(LEDnorm, xlab = "Wavelength (nm)", ylab = "Relative Intensity", col = c("blue","green","red","orange","grey"), lwd = 2)
+```
+
+## Import a second dataset of RGBW spectra. The aim is to describe the relative proportions of Violet, Blue, Green, Yellow, and Red to the overall brightness as PWM levels increase.
+
+```{r}
+setwd("/Power")
+
+POWER <- getspec(where = getwd(), ext = "txt", lim = c(400, 700), decimal = ".", subdir = FALSE, subdir.names = FALSE, fast = TRUE)
+
+plot(POWER, col = "orange", xlab = "Wavelength (nm)", ylab = "Intensity (counts)")
+
+```
+
+## Summarize the spectra shapes for all intensities (PWM values) of RGBW. Parameters in data-frame of interest are as follows:
+
+B1 Sum of the relative reflectance over the entire spectral range (area under the
+curve).
+
+B2 Mean relative reflectance over the entire spectral range
+
+B3 Maximum relative reflectance (Reflectance at wavelength of maximum reflectance)
+
+S1 (Chroma): Relative contribution of a spectral range to the total brightness (B1) S1 is arbitrarily divided in 6 measures of chroma based on the wavelength ranges normally associated with specific hues. The values are calculated using the following ranges: S1U (UV, if applicable): lambda min400nm; S1V (Violet) lambda min-415nm; S1B (Blue) 400nm-510nm; S1G (Green) 510nm-605nm; S1Y (Yellow) 550nm-625nm; S1R (Red) 605nm-lambda max.
+
+```{r}
+POWERsummary <- summary(POWER)
+
+POWERsummary
+
+```
+
+## Summarize the spectra shapes for all intensities (PWM values) of RGBW. Parameters in data-frame of interest are as follows:
+
+```{r}
+Bluepeakshape <- peakshape(POWER, lim = c(400, 500), plot = FALSE)
+Greenpeakshape <- peakshape(POWER, lim = c(500, 605), plot = FALSE)
+Redpeakshape <- peakshape(POWER, lim = c(605, 700), plot = FALSE)
+
+Bluepeakshape
+Greenpeakshape
+Redpeakshape
+```
+
+## Write the outputs of the above functions as csv files so we can create a table for the manuscript.
+
+```{r}
+write.csv(POWERsummary, file = "POWERsummary.csv")
+write.csv(Bluepeakshape, file = "BluepeakshapePOWER.csv")
+write.csv(Greenpeakshape, file = "GreenpeakshapePOWER.csv")
+write.csv(Redpeakshape, file = "ReadpeakshapePOWER.csv")
+```
+
+## To compare that the contributions of each wavelength to the overall brightness are constant across different power levels, we can normalise the spectra to compare shapes at each PWM level. It is clear that they are all very close to identical as would be expected using PWM control of intensities.
+
+
+```{r}
+POWERnorm <- procspec(POWER, opt = c("min", "max"))
+plot(POWERnorm, lwd = 0.5, xlab = "Wavelength (nm)", ylab = "Relative intensity (%)", col = c("blue","green","red","grey","orange", "black", "pink"))
+```
+
+
+
